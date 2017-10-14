@@ -1,3 +1,5 @@
+#!/usr/bin/env lua5.1
+
 local seawolf = require 'seawolf'.__build('text', 'variable', 'contrib')
 local print_r, xtable = seawolf.variable.print_r, seawolf.contrib.seawolf_table
 local json, ltn12, tonumber = require 'dkjson', require 'ltn12', tonumber
