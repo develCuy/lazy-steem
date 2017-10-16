@@ -40,6 +40,10 @@ local function cli_wallet_call(server, method, params)
     sink = ltn12.sink.table(chunks),
   }
 
+  if nil == s then
+    error(("ERROR: Can't connect to %s"):format(server))
+  end
+
   local response = chunks:concat()
 
   return json.decode(response)

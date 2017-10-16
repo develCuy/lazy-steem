@@ -14,6 +14,7 @@ if '' == witness or '' == server then
   print "Usage: publish_feed witness protocol://server:port\n"
   print "  witness   The witness username"
   print "  protocol  Whether http or https"
+  print "  server    Example: localhost"
   print "  port      Example: 8093"
   print "\n"
   os.exit(1)
@@ -207,9 +208,9 @@ end
 
 local function publish_feed(witness, base, quote)
   local result = cli_wallet_call(
+    server,
     'publish_feed',
-    {witness, {base = ("%.3f SBD"):format(base), quote = ("%.3f STEEM"):format(quote)}, true},
-    true
+    {witness, {base = ("%.3f SBD"):format(base), quote = ("%.3f STEEM"):format(quote)}, true}
   )
 end
 
