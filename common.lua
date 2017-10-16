@@ -3,9 +3,6 @@ local xtable = seawolf.contrib.seawolf_table
 local http, https = require 'socket.http', require 'ssl.https'
 local json, ltn12 = require 'dkjson', require 'ltn12'
 
-local seawolf = require 'seawolf'.__build('variable')
-local print_r = seawolf.variable.print_r
-
 local function api_call(url)
   if nil == url then
     return
