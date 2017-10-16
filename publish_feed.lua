@@ -1,14 +1,16 @@
 #!/usr/bin/env lua5.1
 
-local seawolf = require 'seawolf'.__build('text', 'variable', 'contrib')
-local print_r, xtable = seawolf.variable.print_r, seawolf.contrib.seawolf_table
-local json, ltn12, tonumber = require 'dkjson', require 'ltn12', tonumber
-local trim = seawolf.text.trim
-local http, https = require 'socket.http', require 'ssl.https'
+local seawolf = require 'seawolf'.__build('text')
+local trim, tonumber = seawolf.text.trim, tonumber
 
-local server = trim(arg[1])
+local common = require 'common'
+local api_call = common.api_call
+local cli_wallet_call = common.cli_wallet_call
 
-if '' == server then
+local witness = trim(arg[1])
+local server = trim(arg[2])
+
+if '' == witness or '' == server then
   print "Usage: publish_feed witness protocol://server:port\n"
   print "  witness   The witness username"
   print "  protocol  Whether http or https"
@@ -115,22 +117,6 @@ apis = {
   },
 }
 
-local function api_call(url)
-  if nil == url then
-    return
-  end
-
-  local chunks = xtable()
-  local r, c, h, s = https.request{
-    url = url,
-    sink = ltn12.sink.table(chunks),
-  }
-
-  local response = chunks:concat()
-
-  return json.decode(response)
-end
-
 -- Fetch current prices from ALL active pairs
 local function fetch_market_prices()
   local result = {}
@@ -219,32 +205,6 @@ local function calc_sbd_price(data)
   end
 end
 
-local function cli_wallet_call(method, params)
-  local request = {
-    jsonrpc = '2.0',
-    id = 1,
-    method = method,
-    params = params or {},
-  }
-  local jsonRequest = json.encode(request)
-  local chunks = xtable()
-
-  local r, c, h = ('https' == server:sub(1,5) and https or http).request{
-    url = server,
-    method = 'POST',
-    headers = {
-      ['content-type'] = 'application/json',
-      ['content-length'] = jsonRequest:len()
-    },
-    source = ltn12.source.string(jsonRequest),
-    sink = ltn12.sink.table(chunks),
-  }
-
-  local response = chunks:concat()
-
-  return json.decode(response)
-end
-
 local function publish_feed(witness, base, quote)
   local result = cli_wallet_call(
     'publish_feed',
@@ -260,4 +220,4 @@ local pairs_averages = calc_pairs_averages(market_prices)
 local steem_price = calc_price('steem', pairs_averages)
 local sbd_price = calc_price('sbd', pairs_averages)
 
-publish_feed('dropahead', sbd_price, steem_price)
+publish_feed(witness, sbd_price, steem_price)
