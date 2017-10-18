@@ -10,7 +10,7 @@ local cli_wallet_call = common.cli_wallet_call
 local account = trim(arg[1])
 local server = trim(arg[2])
 
-if '' == witness or '' == server then
+if '' == account or '' == server then
   print "Usage: claim_reward account protocol://server:port\n"
   print "  account   The account name"
   print "  protocol  Whether http or https"
@@ -35,6 +35,8 @@ local function claim_reward_balance(account, reward_steem, reward_sbd, reward_ve
     {account, reward_steem, reward_sbd, reward_vests, true}
   )
 end
+
+local data = get_account(account)
 
 if data and data.result then
   claim_reward_balance(
