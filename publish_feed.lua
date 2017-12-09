@@ -27,8 +27,7 @@ if '' == witness or '' == server then
   print "Usage: publish_feed [OPTION]... [WITNESS NAME] [CLI_WALLET SERVER]"
   print [[]]
   print [[  Available options:]]
-  print [[  --peg[=BIAS]      Keep SBD close to USD price and optionally]]
-  print [[                    set the bias percentage.]]
+  print [[  --bias[=NUMBER]   Set the bias percentage]]
   print [[]]
   print [[  Parameters:]]
   print "  WITNESS NAME       The witness username"
@@ -238,13 +237,16 @@ end
 local market_prices = fetch_market_prices()
 local pairs_averages = calc_pairs_averages(market_prices)
 
--- Calculate STEEM base price
+-- Calculate STEEM quote
 local steem_quote = 1.000
-if not empty(options.peg) then
-  steem_quote = 1 - ((options.peg*1/100)/(1 + options.peg*1/100))
+if not empty(options.bias) then
+  steem_quote = 1 - ((options.bias*1/100)/(1 + options.bias*1/100))
 end
 
--- Calculate SBD quote
-local sbd_base = calc_price('sbd', pairs_averages)
+-- Calculate SBD price
+local sbd_price = calc_price('sbd', pairs_averages)
+
+-- Calculate SBD base
+local sbd_base = sbd_price * steem_quote
 
 publish_feed(witness, sbd_base, steem_quote)
