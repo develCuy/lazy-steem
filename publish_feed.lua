@@ -1,8 +1,8 @@
 #!/usr/bin/env lua5.1
 
-local seawolf = require 'seawolf'.__build('text')
+local seawolf = require 'seawolf'.__build([[text]], [[variable]])
 local trim, tonumber = seawolf.text.trim, tonumber
-local explode = seawolf.text.explode
+local explode, empty = seawolf.text.explode, seawolf.variable.empty
 
 local common = require 'common'
 local api_call = common.api_call
@@ -146,28 +146,26 @@ local function fetch_market_prices()
   for provider, api in pairs(apis) do
     for from, tos in pairs(api.pairs) do
       for to, status in pairs(tos) do
-        if not (options.peg and (to == 'sbd' or from == 'sbd')) then
-          if status then
-            -- Build URL to fetch data
-            local url = api.get_url(api.alias[from] or from, api.alias[to] or to)
+        if status then
+          -- Build URL to fetch data
+          local url = api.get_url(api.alias[from] or from, api.alias[to] or to)
 
-            -- Test cache
-            if api.cache.url ~= url then
-              api.cache.url = url
+          -- Test cache
+          if api.cache.url ~= url then
+            api.cache.url = url
 
-              -- Fetch data from URL
-              api.cache.data = api_call(url)
-            end
+            -- Fetch data from URL
+            api.cache.data = api_call(url)
+          end
 
-            if api.cache.data then
-              local price = api.get_price(api.alias[from] or from, api.alias[to] or to, api.cache.data)
-              if price then
-                local pair = ('%s_%s'):format(from, to)
-                if nil == result[pair] then
-                  result[pair] = {}
-                end
-                result[pair][provider] = price
+          if api.cache.data then
+            local price = api.get_price(api.alias[from] or from, api.alias[to] or to, api.cache.data)
+            if price then
+              local pair = ('%s_%s'):format(from, to)
+              if nil == result[pair] then
+                result[pair] = {}
               end
+              result[pair][provider] = price
             end
           end
         end
@@ -240,19 +238,13 @@ end
 local market_prices = fetch_market_prices()
 local pairs_averages = calc_pairs_averages(market_prices)
 
--- Calculate STEEM price in USD
-local steem_price = calc_price('steem', pairs_averages)
-
--- Calculate SBD price in USD
-local sbd_price
-if options.peg then
-  if options.peg == [[]] then
-    sbd_price = 1.000
-  else
-    sbd_price = (steem_price - 1) / (options.peg*1 / 100)
-  end
-else
-  sbd_price = calc_price('sbd', pairs_averages)
+-- Calculate STEEM base price
+local steem_quote = 1.000
+if not empty(options.peg) then
+  steem_quote = 1 - ((options.peg*1/100)/(1 + options.peg*1/100))
 end
 
-publish_feed(witness, sbd_price, steem_price)
+-- Calculate SBD quote
+local sbd_base = calc_price('sbd', pairs_averages)
+
+publish_feed(witness, sbd_base, steem_quote)
