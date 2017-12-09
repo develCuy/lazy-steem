@@ -2,21 +2,42 @@
 
 local seawolf = require 'seawolf'.__build('text')
 local trim, tonumber = seawolf.text.trim, tonumber
+local explode = seawolf.text.explode
 
 local common = require 'common'
 local api_call = common.api_call
 local cli_wallet_call = common.cli_wallet_call
 
-local witness = trim(arg[1])
-local server = trim(arg[2])
+-- Parse params and options
+local options, params = {}, {}
+for k, v in pairs(arg or {}) do
+  if k > 0 then
+    if [[--]] == v:sub(1, 2) then
+      local parts = explode([[=]], v:sub(3))
+      options[parts[1]] = parts[2]
+    else
+      params[#params + 1] = v
+    end
+  end
+end
+local witness = trim(params[1])
+local server = trim(params[2])
 
 if '' == witness or '' == server then
-  print "Usage: publish_feed witness protocol://server:port\n"
-  print "  witness   The witness username"
-  print "  protocol  Whether http or https"
-  print "  server    Example: localhost"
-  print "  port      Example: 8093"
-  print "\n"
+  print "Usage: publish_feed [OPTION]... [WITNESS NAME] [CLI_WALLET SERVER]"
+  print [[]]
+  print [[  Available options:]]
+  print [[  --peg[=BIAS]      Keep SBD close to USD price and optionally]]
+  print [[                    set the bias percentage.]]
+  print [[]]
+  print [[  Parameters:]]
+  print "  WITNESS NAME       The witness username"
+  print "  CLI_WALLET SERVER  Format: protocol://server:port"
+  print "                       protocol  Whether http or https"
+  print "                       server    Example: localhost"
+  print "                       port      Example: 8093"
+  print [[]]
+  print [[]]
   os.exit(1)
 end
 
@@ -125,26 +146,28 @@ local function fetch_market_prices()
   for provider, api in pairs(apis) do
     for from, tos in pairs(api.pairs) do
       for to, status in pairs(tos) do
-        if status then
-          -- Build URL to fetch data
-          local url = api.get_url(api.alias[from] or from, api.alias[to] or to)
+        if not (options.peg and (to == 'sbd' or from == 'sbd')) then
+          if status then
+            -- Build URL to fetch data
+            local url = api.get_url(api.alias[from] or from, api.alias[to] or to)
 
-          -- Test cache
-          if api.cache.url ~= url then
-            api.cache.url = url
+            -- Test cache
+            if api.cache.url ~= url then
+              api.cache.url = url
 
-            -- Fetch data from URL
-            api.cache.data = api_call(url)
-          end
+              -- Fetch data from URL
+              api.cache.data = api_call(url)
+            end
 
-          if api.cache.data then
-            local price = api.get_price(api.alias[from] or from, api.alias[to] or to, api.cache.data)
-            if price then
-              local pair = ('%s_%s'):format(from, to)
-              if nil == result[pair] then
-                result[pair] = {}
+            if api.cache.data then
+              local price = api.get_price(api.alias[from] or from, api.alias[to] or to, api.cache.data)
+              if price then
+                local pair = ('%s_%s'):format(from, to)
+                if nil == result[pair] then
+                  result[pair] = {}
+                end
+                result[pair][provider] = price
               end
-              result[pair][provider] = price
             end
           end
         end
@@ -219,6 +242,17 @@ local pairs_averages = calc_pairs_averages(market_prices)
 
 -- Calculate STEEM price in USD
 local steem_price = calc_price('steem', pairs_averages)
-local sbd_price = calc_price('sbd', pairs_averages)
+
+-- Calculate SBD price in USD
+local sbd_price
+if options.peg then
+  if options.peg == [[]] then
+    sbd_price = 1.000
+  else
+    sbd_price = (steem_price - 1) / (options.peg*1 / 100)
+  end
+else
+  sbd_price = calc_price('sbd', pairs_averages)
+end
 
 publish_feed(witness, sbd_price, steem_price)
