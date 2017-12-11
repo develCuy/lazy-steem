@@ -136,6 +136,30 @@ apis = {
       end
     end,
   },
+  hitbtc = {
+    cache = {url = nil, data = nil},
+    pairs = {
+      btc = {usd = true, steem = true, sbd = true},
+    },
+    alias = {
+      usd = [[USD]],
+      btc = [[BTC]],
+      steem = [[STEEM]],
+      sbd = [[SBD]],
+    },
+    get_url = function (from, to)
+      if [[STEEM]] == to or [[SBD]] == to then
+        return ([[https://api.hitbtc.com/api/2/public/ticker/%s%s]]):format(to, from)
+      else
+        return ([[https://api.hitbtc.com/api/2/public/ticker/%s%s]]):format(from, to)
+      end
+    end,
+    get_price = function (from, to, data)
+      if data then
+        return data.last
+      end
+    end,
+  },
 }
 
 -- Fetch current prices from ALL active pairs
