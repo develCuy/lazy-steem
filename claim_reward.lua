@@ -39,6 +39,19 @@ end
 local data = get_account(account)
 
 if data and data.result then
+  print(([[Rewards balance for @%s:
+
+%s
+%s
+%s
+
+Claiming rewards...]]):format(
+    account,
+    data.result.reward_steem_balance,
+    data.result.reward_sbd_balance,
+    data.result.reward_vesting_balance
+  ))
+
   claim_reward_balance(
     account,
     data.result.reward_steem_balance,
