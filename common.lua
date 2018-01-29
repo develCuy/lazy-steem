@@ -1,7 +1,15 @@
-local seawolf = require 'seawolf'.__build('contrib')
-local xtable = seawolf.contrib.seawolf_table
+local seawolf = require 'seawolf'.__build('contrib', [[variable]])
+local xtable, print_r = seawolf.contrib.seawolf_table, seawolf.variable.print_r
 local http, https = require 'socket.http', require 'ssl.https'
 local json, ltn12 = require 'dkjson', require 'ltn12'
+
+function debug.print(msg)
+  if nil == msg then
+    msg = [[nil]]
+  end
+  io.stderr:write( ([[table]] == type(msg) or [[userdata]] == type(msg)) and print_r(msg, 1) or msg)
+  io.stderr:write "\n"
+end
 
 local function api_call(url)
   if nil == url then
