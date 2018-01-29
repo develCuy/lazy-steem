@@ -7,19 +7,10 @@ local explode, empty = seawolf.text.explode, seawolf.variable.empty
 local common = require 'common'
 local api_call = common.api_call
 local cli_wallet_call = common.cli_wallet_call
+local parse_args = common.parse_args
 
 -- Parse params and options
-local options, params = {}, {}
-for k, v in pairs(arg or {}) do
-  if k > 0 then
-    if [[--]] == v:sub(1, 2) then
-      local parts = explode([[=]], v:sub(3))
-      options[parts[1]] = parts[2]
-    else
-      params[#params + 1] = v
-    end
-  end
-end
+local options, params = parse_args(arg)
 local witness = trim(params[1])
 local server = trim(params[2])
 
