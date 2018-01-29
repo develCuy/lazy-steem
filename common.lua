@@ -1,5 +1,6 @@
-local seawolf = require 'seawolf'.__build('contrib', [[variable]])
+local seawolf = require 'seawolf'.__build('contrib', [[text]], [[variable]])
 local xtable, print_r = seawolf.contrib.seawolf_table, seawolf.variable.print_r
+local trim, explode = seawolf.text.trim, seawolf.text.explode
 local http, https = require 'socket.http', require 'ssl.https'
 local json, ltn12 = require 'dkjson', require 'ltn12'
 
@@ -57,7 +58,26 @@ local function cli_wallet_call(server, method, params)
   return json.decode(response)
 end
 
+--[[ Parse params and options.
+]]
+local function parse_args(args)
+  local options, params = {}, {}
+  for k, v in pairs(args or {}) do
+    if k > 0 then
+      if [[--]] == v:sub(1, 2) then
+        local parts = explode([[=]], v:sub(3))
+        options[parts[1]] = trim(parts[2])
+      else
+        params[#params + 1] = trim(v)
+      end
+    end
+  end
+
+  return options, params
+end
+
 return {
   api_call = api_call,
   cli_wallet_call = cli_wallet_call,
+  parse_args = parse_args,
 }
