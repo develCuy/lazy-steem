@@ -8,7 +8,7 @@ function debug.print(msg)
   if nil == msg then
     msg = [[nil]]
   end
-  io.stderr:write( ([[table]] == type(msg) or [[userdata]] == type(msg)) and print_r(msg, 1) or msg)
+  io.stderr:write( ([[table]] == type(msg) or [[userdata]] == type(msg)) and print_r(msg, 1) or tostring(msg))
   io.stderr:write "\n"
 end
 
