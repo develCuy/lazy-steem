@@ -1,6 +1,7 @@
 local seawolf = require 'seawolf'.__build('contrib', [[text]], [[variable]])
 local xtable, print_r = seawolf.contrib.seawolf_table, seawolf.variable.print_r
 local trim, explode = seawolf.text.trim, seawolf.text.explode
+local empty = seawolf.variable.empty
 local http, https = require 'socket.http', require 'ssl.https'
 local json, ltn12 = require 'dkjson', require 'ltn12'
 
@@ -58,6 +59,59 @@ local function cli_wallet_call(server, method, params)
   return json.decode(response)
 end
 
+
+local function steemd_call_raw(method, params)
+  local config = settings.steemd
+  local request = {
+    id = 0,
+    method = method,
+    params = params or {},
+  }
+  local chunks = xtable()
+
+  local r, c, h, response
+  for _, node in pairs(config) do
+    if empty(node.methods) or false ~= node.methods[method] then
+      debug.print(([[FROM %s: %s()]]):format(node.host, method))
+
+      -- Convert request to JSONRPC
+      if node.jussi then
+        request.jsonrpc = [[2.0]]
+        request.id = 1
+      end
+
+      local jsonRequest = json.encode(request)
+      r, c, h = (node.scheme == 'https' and https or http).request{
+        url = ('%s://%s:%s'):format(node.scheme, node.host, node.port),
+        method = 'POST',
+        headers = {
+          ['content-type'] = 'application/json',
+          ['content-length'] = jsonRequest:len()
+        },
+        source = ltn12.source.string(jsonRequest),
+        sink = ltn12.sink.table(chunks),
+      }
+
+      if 200 == c then
+        return chunks:concat()
+      else
+        debug.print(([[ERROR! Node returned error code "%s".]]):format(c or [[]], chunks:concat():sub(1, 100)))
+      end
+    end
+  end
+end
+
+local function steemd_call(...)
+  for i = 0, (settings.retry or 0) do
+    local res = steemd_call_raw(...)
+    if res then
+      return res
+    else
+      debug.print(([[Try #%d failed!]]):format(i + 1))
+    end
+  end
+end
+
 --[[ Parse params and options.
 ]]
 local function parse_args(args)
@@ -79,5 +133,6 @@ end
 return {
   api_call = api_call,
   cli_wallet_call = cli_wallet_call,
+  steemd_call = steemd_call,
   parse_args = parse_args,
 }
