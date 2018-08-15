@@ -1,3 +1,5 @@
+(This project is deprecated due to the death of STEEM's cli_wallet. Long live to cli_wallet!)
+
 # lazy-steem - Easy tools for lazy STEEM shareholders
 
 STEEM is very nice but it has some pretty boring repetitive tasks that could be automated.
